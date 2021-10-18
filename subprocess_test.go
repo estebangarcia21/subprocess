@@ -16,7 +16,7 @@ func TestSubprocess(t *testing.T) {
 		cmdStr = "ls"
 	}
 
-	sp := subprocess.New()
+	sp := subprocess.New(subprocess.HideOutput)
 
 	err := sp.Start(cmdStr)
 
