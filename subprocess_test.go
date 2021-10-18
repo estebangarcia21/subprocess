@@ -1,6 +1,7 @@
 package subprocess_test
 
 import (
+	"os"
 	"runtime"
 	"testing"
 
@@ -16,7 +17,12 @@ func TestSubprocess(t *testing.T) {
 		cmdStr = "ls"
 	}
 
-	sp := subprocess.New(subprocess.HideOutput)
+	var opts []subprocess.Option
+	if val, _ := os.LookupEnv("SHOW_TEST_SUBPROCESS_OUTPUT"); val != "true" {
+		opts = append(opts, subprocess.HideOutput)
+	}
+
+	sp := subprocess.New(opts...)
 
 	err := sp.Start(cmdStr)
 
