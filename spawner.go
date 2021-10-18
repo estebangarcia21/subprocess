@@ -40,7 +40,7 @@ func (s spawner) CreateCommand(cmd string, args string) (*exec.Cmd, error) {
 	if err != nil {
 		return nil, err
 	}
-	return exec.Command(spawnCmd, append(s[spawnCmd], " \""+args+"\"")...), nil
+	return exec.Command(spawnCmd, append(s[spawnCmd], args)...), nil
 }
 
 // getAvaiableSpawnCommand gets the first available spawn command. It returns
