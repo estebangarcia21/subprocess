@@ -11,6 +11,7 @@ import (
 type Subprocess struct {
 	ExitCode   int // ExitCode is the exit code of the process. Defaults to -1.
 	hideOutput bool
+	cmdStr     string
 	cmd        *exec.Cmd // cmd is the underlying command being executed.
 }
 
@@ -23,10 +24,11 @@ var HideOutput Option = func(s *Subprocess) {
 }
 
 // New creates a new Subprocess.
-func New(opts ...Option) *Subprocess {
+func New(cmdStr string, opts ...Option) *Subprocess {
 	s := &Subprocess{
 		ExitCode:   -1,
 		hideOutput: false,
+		cmdStr:     cmdStr,
 		cmd:        nil,
 	}
 	for _, opt := range opts {
@@ -40,14 +42,14 @@ func (s *Subprocess) IsFinished() bool {
 	return s.cmd.ProcessState.Exited()
 }
 
-// Start starts the process.
-func (s *Subprocess) Start(cmdStr string) error {
+// Exec starts the subprocess.
+func (s *Subprocess) Exec() error {
 	spawner, osName, err := spawnerFromOS()
 	if err != nil {
 		return fmt.Errorf("operating system %s not found", osName)
 	}
 
-	cmd, err := spawner.CreateCommand(cmdStr)
+	cmd, err := spawner.CreateCommand(s.cmdStr)
 	if err != nil {
 		return err
 	}
@@ -76,4 +78,13 @@ func (s *Subprocess) Start(cmdStr string) error {
 	s.ExitCode = cmd.ProcessState.ExitCode()
 
 	return nil
+}
+
+// ExecAsync starts the subprocess asynchronously.
+func (s *Subprocess) ExecAsync() chan error {
+	ch := make(chan error)
+	go func(s *Subprocess) {
+		ch <- s.Exec()
+	}(s)
+	return ch
 }

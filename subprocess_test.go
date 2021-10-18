@@ -10,13 +10,41 @@ import (
 	"github.com/estebangarcia21/subprocess"
 )
 
-func TestSubprocess(t *testing.T) {
+func TestExec(t *testing.T) {
+	subprocessTest(t, testSubprocess{
+		WindowsCmd: "dir",
+		LinuxCmd:   "ls",
+		TestFunc: func(s *subprocess.Subprocess) error {
+			return s.Exec()
+		},
+	})
+}
+
+func TestExecAsync(t *testing.T) {
+	subprocessTest(t, testSubprocess{
+		WindowsCmd: "dir",
+		LinuxCmd:   "ls",
+		TestFunc: func(s *subprocess.Subprocess) error {
+			return <-s.ExecAsync()
+		},
+	})
+}
+
+type testSubprocess struct {
+	WindowsCmd string
+	LinuxCmd   string
+	TestFunc   testFunc
+}
+
+type testFunc func(s *subprocess.Subprocess) error
+
+func subprocessTest(t *testing.T, testOpts testSubprocess) {
 	var cmdStr string
 
 	if runtime.GOOS == "windows" {
-		cmdStr = "dir"
+		cmdStr = testOpts.WindowsCmd
 	} else {
-		cmdStr = "ls"
+		cmdStr = testOpts.LinuxCmd
 	}
 
 	var opts []subprocess.Option
@@ -24,17 +52,16 @@ func TestSubprocess(t *testing.T) {
 
 	showSubprocessOutput := val == "true"
 	if !showSubprocessOutput {
-		fmt.Println("SHOW_TEST_SUBPROCESS_OUTPUT is enabled. Subprocess STDOUT will be shown...")
 		opts = append(opts, subprocess.HideOutput)
 	}
 
-	sp := subprocess.New(opts...)
+	sp := subprocess.New(cmdStr, opts...)
 
 	if showSubprocessOutput {
 		logTitle("Subprocess Output Begin")
 	}
 
-	err := sp.Start(cmdStr)
+	err := testOpts.TestFunc(sp)
 
 	if showSubprocessOutput {
 		logTitle("Subprocess Output End")
@@ -47,6 +74,7 @@ func TestSubprocess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("received error while executing subprocess: %v", err)
 	}
+
 }
 
 func logTitle(msg string) {
