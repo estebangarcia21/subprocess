@@ -10,13 +10,30 @@ import (
 
 // Subprocess represents a monitored process executed by the application.
 type Subprocess struct {
-	ExitCode int       // ExitCode is the exit code of the process. Defaults to -1.
-	cmd      *exec.Cmd // cmd is the underlying command being executed.
+	ExitCode   int // ExitCode is the exit code of the process. Defaults to -1.
+	hideOutput bool
+	cmd        *exec.Cmd // cmd is the underlying command being executed.
+}
+
+// Option is a configuration argument for a subprocess.
+type Option func(s *Subprocess)
+
+// HideOutput hides the output of the subprocess.
+var HideOutput Option = func(s *Subprocess) {
+	s.hideOutput = true
 }
 
 // New creates a new Subprocess.
-func New() *Subprocess {
-	return &Subprocess{ExitCode: -1}
+func New(opts ...Option) *Subprocess {
+	s := &Subprocess{
+		ExitCode:   -1,
+		hideOutput: false,
+		cmd:        nil,
+	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }
 
 // IsFinished returns true if the process has finished.
@@ -47,11 +64,14 @@ func (s *Subprocess) Start(cmdStr string) error {
 
 	_ = cmd.Start()
 
-	scanner := bufio.NewScanner(stdout)
-	scanner.Split(bufio.ScanRunes)
-	for scanner.Scan() {
-		m := scanner.Text()
-		fmt.Print(m)
+	if !s.hideOutput {
+		scanner := bufio.NewScanner(stdout)
+		scanner.Split(bufio.ScanRunes)
+
+		for scanner.Scan() {
+			m := scanner.Text()
+			fmt.Print(m)
+		}
 	}
 
 	_ = cmd.Wait()
