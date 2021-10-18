@@ -21,7 +21,7 @@ type spawner map[string][]string
 
 var (
 	windowsSpawner = spawner{
-		"cmd":  {"powershell.exe -Command"},
+		"cmd":  {"powershell -Command"},
 		"pwsh": {"powershell -Command"},
 	}
 	macSpawner = spawner{
@@ -47,6 +47,11 @@ func (s spawner) CreateCommand(cmd string, args string) (*exec.Cmd, error) {
 // an error if no command is available.
 func (s spawner) getAvaiableSpawnCommand() (string, error) {
 	var cmd string
+
+	if runtime.GOOS == "windows" {
+		return "cmd", nil
+	}
+
 	for k := range s {
 		if _, err := exec.LookPath(k); err != nil {
 			continue

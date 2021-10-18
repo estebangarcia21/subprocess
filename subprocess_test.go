@@ -1,6 +1,7 @@
 package subprocess_test
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 	"testing"
@@ -12,7 +13,7 @@ func TestSubprocess(t *testing.T) {
 	var cmdStr string
 
 	if runtime.GOOS == "windows" {
-		cmdStr = "Write-Host Hello world!"
+		cmdStr = "dir"
 	} else {
 		cmdStr = "ls"
 	}
@@ -20,6 +21,8 @@ func TestSubprocess(t *testing.T) {
 	var opts []subprocess.Option
 	if val, _ := os.LookupEnv("SHOW_TEST_SUBPROCESS_OUTPUT"); val != "true" {
 		opts = append(opts, subprocess.HideOutput)
+	} else {
+		fmt.Printf("GOOS: %s", runtime.GOOS)
 	}
 
 	sp := subprocess.New(opts...)
