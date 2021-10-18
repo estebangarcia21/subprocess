@@ -10,7 +10,7 @@ import (
 func TestSubprocess(t *testing.T) {
 	var cmdStr string
 
-	if runtime.GOARCH == "windows" {
+	if runtime.GOOS == "windows" {
 		cmdStr = "dir"
 	} else {
 		cmdStr = "ls"
