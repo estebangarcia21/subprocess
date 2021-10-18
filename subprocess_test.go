@@ -12,7 +12,7 @@ func TestSubprocess(t *testing.T) {
 	var cmdStr string
 
 	if runtime.GOOS == "windows" {
-		cmdStr = "Write-Host Hello world!"
+		cmdStr = "dir"
 	} else {
 		cmdStr = "ls"
 	}
