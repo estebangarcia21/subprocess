@@ -21,8 +21,8 @@ type spawner map[string][]string
 
 var (
 	windowsSpawner = spawner{
-		"cmd":  {"powershell -Command"},
-		"pwsh": {"powershell -Command"},
+		"cmd":  {"powershell.exe -Command"},
+		"pwsh": {"powershell -command"},
 	}
 	macSpawner = spawner{
 		"bash": {"-c"},
