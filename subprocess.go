@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 )
 
 // Subprocess represents a monitored process executed by the application.
@@ -48,9 +47,7 @@ func (s *Subprocess) Start(cmdStr string) error {
 		return fmt.Errorf("operating system %s not found", osName)
 	}
 
-	t := strings.Split(cmdStr, " ")
-
-	cmd, err := spawner.CreateCommand(t[0], strings.Join(t[0:], " "))
+	cmd, err := spawner.CreateCommand(cmdStr)
 	if err != nil {
 		return err
 	}
