@@ -24,6 +24,7 @@ func TestSubprocess(t *testing.T) {
 
 	showSubprocessOutput := val == "true"
 	if !showSubprocessOutput {
+		fmt.Println("SHOW_TEST_SUBPROCESS_OUTPUT is enabled. Subprocess STDOUT will be shown...")
 		opts = append(opts, subprocess.HideOutput)
 	}
 
@@ -52,7 +53,6 @@ func logTitle(msg string) {
 	div := "========================================"
 	divLen := len(div)
 
-	// center the msg based on div length and print
 	msgLen := len(msg)
 	msgStart := (divLen - msgLen) / 2
 
