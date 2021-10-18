@@ -21,8 +21,8 @@ type spawner map[string][]string
 
 var (
 	windowsSpawner = spawner{
-		"cmd":  {"powershell -command"},
-		"pwsh": {"powershell -command"},
+		"cmd":  {"powershell -Command"},
+		"pwsh": {"powershell -Command"},
 	}
 	macSpawner = spawner{
 		"bash": {"-c"},
@@ -35,12 +35,12 @@ var (
 )
 
 // CreateCommand creates an exec.Cmd that is prepared with the root command.
-func (s spawner) CreateCommand(cmd string, args ...string) (*exec.Cmd, error) {
+func (s spawner) CreateCommand(cmd string, args string) (*exec.Cmd, error) {
 	spawnCmd, err := s.getAvaiableSpawnCommand()
 	if err != nil {
 		return nil, err
 	}
-	return exec.Command(spawnCmd, append(s[spawnCmd], args...)...), nil
+	return exec.Command(spawnCmd, append(s[spawnCmd], "\""+args+"\"")...), nil
 }
 
 // getAvaiableSpawnCommand gets the first available spawn command. It returns
