@@ -10,7 +10,6 @@ import (
 // spawner is a command located in the system's PATH that begins the
 // process. Each major operating system has its own spawner.
 //
-//
 // Each key is PATH command that can open the process. Their position in
 // the map determines their priority. For example, if the first
 // command is not present in the PATH then it will attempt to use the
@@ -39,7 +38,6 @@ func (s spawner) CreateCommand(args string) (*exec.Cmd, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return exec.Command(spawnCmd, append(s[spawnCmd], args)...), nil
 }
 
