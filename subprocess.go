@@ -9,11 +9,23 @@ import (
 
 // Subprocess represents a monitored process executed by the application.
 type Subprocess struct {
-	ExitCode   int // ExitCode is the exit code of the process. Defaults to -1.
+	ExitCode   int
 	hideOutput bool
-	cmdStr     string
-	cmd        *exec.Cmd // cmd is the underlying command being executed.
+	executable string
+	cmd        *exec.Cmd
+	shell      bool
+	CommandConfig
 }
+
+// CommandConfig is the configuration of a command.
+type CommandConfig struct {
+	Args    []string // Args is the subprocess command arguments.
+	Options []Option // Options is the subprocess options.
+	Context string   // Context is where the subprocesses will be executed. By default the process will execute where the binary lies.
+}
+
+// Args represents a list of command arguments.
+type Args []string
 
 // Option is a configuration argument for a subprocess.
 type Option func(s *Subprocess)
@@ -23,15 +35,20 @@ var HideOutput Option = func(s *Subprocess) {
 	s.hideOutput = true
 }
 
-// New creates a new Subprocess.
-func New(cmdStr string, opts ...Option) *Subprocess {
+// Shell determines whether the command will directly be ran in the shell
+// without paramater sanitization.
+var Shell Option = func(s *Subprocess) {
+	s.shell = true
+}
+
+// New creates a new Subprocess with the default exit code of 1.
+func New(cmd string, config CommandConfig) *Subprocess {
 	s := &Subprocess{
-		ExitCode:   -1,
-		hideOutput: false,
-		cmdStr:     cmdStr,
-		cmd:        nil,
+		ExitCode:      -1,
+		executable:    cmd,
+		CommandConfig: config,
 	}
-	for _, opt := range opts {
+	for _, opt := range config.Options {
 		opt(s)
 	}
 	return s
@@ -49,7 +66,7 @@ func (s *Subprocess) Exec() error {
 		return fmt.Errorf("operating system %s not found", osName)
 	}
 
-	cmd, err := spawner.CreateCommand(s.cmdStr)
+	cmd, err := spawner.CreateCommand(s.executable, s.Args, s.shell, osName)
 	if err != nil {
 		return err
 	}
@@ -59,6 +76,11 @@ func (s *Subprocess) Exec() error {
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
+	}
+
+	wd, wdErr := os.Getwd()
+	if wdErr == nil && s.Context != "" {
+		os.Chdir(s.Context)
 	}
 
 	_ = cmd.Start()
@@ -74,6 +96,10 @@ func (s *Subprocess) Exec() error {
 	}
 
 	_ = cmd.Wait()
+
+	if wdErr == nil {
+		os.Chdir(wd)
+	}
 
 	s.ExitCode = cmd.ProcessState.ExitCode()
 

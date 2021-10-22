@@ -11,70 +11,80 @@ import (
 )
 
 func TestExec(t *testing.T) {
-	subprocessTest(t, testSubprocess{
-		WindowsCmd: "dir",
-		LinuxCmd:   "ls",
-		TestFunc: func(s *subprocess.Subprocess) error {
-			return s.Exec()
+	tests := map[string]struct {
+		cmd           string
+		commandConfig subprocess.CommandConfig
+	}{
+		"windows": {
+			cmd: "dir",
+			commandConfig: subprocess.CommandConfig{
+				Context: "/",
+			},
 		},
-	})
-}
+		"darwin": {
+			cmd: "ls",
+			commandConfig: subprocess.CommandConfig{
+				Args:    []string{"-lh"},
+				Context: "/",
+			},
+		},
+		"linux": {
+			cmd: "ls",
+			commandConfig: subprocess.CommandConfig{
+				Args:    []string{"-lh"},
+				Context: "/",
+			},
+		},
+	}
 
-func TestExecAsync(t *testing.T) {
-	subprocessTest(t, testSubprocess{
-		WindowsCmd: "dir",
-		LinuxCmd:   "ls",
-		TestFunc: func(s *subprocess.Subprocess) error {
-			return <-s.ExecAsync()
-		},
-	})
+	goos := runtime.GOOS
+
+	for platform, tt := range tests {
+		if platform != goos {
+			continue
+		}
+
+		var opts []subprocess.Option
+		val, _ := os.LookupEnv("SHOW_TEST_SUBPROCESS_OUTPUT")
+
+		showSubprocessOutput := val == "true"
+		if !showSubprocessOutput {
+			opts = append(opts, subprocess.HideOutput)
+		}
+
+		sp := subprocess.New(tt.cmd, tt.commandConfig)
+
+		if showSubprocessOutput {
+			logTitle("Subprocess Output Begin")
+		}
+
+		err := sp.Exec()
+
+		if showSubprocessOutput {
+			logTitle("Subprocess Output End")
+		}
+
+		if sp.ExitCode != 0 {
+			t.Fatalf("wanted exit code 0; got %d", sp.ExitCode)
+		}
+
+		if err != nil {
+			t.Fatalf("received error while executing subprocess: %v", err)
+		}
+
+	}
 }
 
 type testSubprocess struct {
 	WindowsCmd string
 	LinuxCmd   string
+	Config     subprocess.CommandConfig
 	TestFunc   testFunc
 }
 
 type testFunc func(s *subprocess.Subprocess) error
 
 func subprocessTest(t *testing.T, testOpts testSubprocess) {
-	var cmdStr string
-
-	if runtime.GOOS == "windows" {
-		cmdStr = testOpts.WindowsCmd
-	} else {
-		cmdStr = testOpts.LinuxCmd
-	}
-
-	var opts []subprocess.Option
-	val, _ := os.LookupEnv("SHOW_TEST_SUBPROCESS_OUTPUT")
-
-	showSubprocessOutput := val == "true"
-	if !showSubprocessOutput {
-		opts = append(opts, subprocess.HideOutput)
-	}
-
-	sp := subprocess.New(cmdStr, opts...)
-
-	if showSubprocessOutput {
-		logTitle("Subprocess Output Begin")
-	}
-
-	err := testOpts.TestFunc(sp)
-
-	if showSubprocessOutput {
-		logTitle("Subprocess Output End")
-	}
-
-	if sp.ExitCode != 0 {
-		t.Fatalf("wanted exit code 0; got %d", sp.ExitCode)
-	}
-
-	if err != nil {
-		t.Fatalf("received error while executing subprocess: %v", err)
-	}
-
 }
 
 func logTitle(msg string) {

@@ -33,12 +33,18 @@ var (
 )
 
 // CreateCommand creates an exec.Cmd that is prepared with the root command.
-func (s spawner) CreateCommand(args string) (*exec.Cmd, error) {
+func (s spawner) CreateCommand(cmd string, args []string, shell bool, os string) (*exec.Cmd, error) {
 	spawnCmd, err := s.getAvaiableSpawnCommand()
 	if err != nil {
 		return nil, err
 	}
-	return exec.Command(spawnCmd, append(s[spawnCmd], args)...), nil
+
+	if shell || os == "windows" {
+		cmdStr := fmt.Sprintf("%s %s", cmd, strings.Join(args, " "))
+		return exec.Command(spawnCmd, append(s[spawnCmd], cmdStr)...), nil
+	}
+
+	return exec.Command(cmd, args...), nil
 }
 
 // getAvaiableSpawnCommand gets the first available spawn command. It returns
