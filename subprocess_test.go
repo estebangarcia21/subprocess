@@ -71,25 +71,13 @@ func TestExec(t *testing.T) {
 		if err != nil {
 			t.Fatalf("received error while executing subprocess: %v", err)
 		}
-
 	}
 }
 
-type testSubprocess struct {
-	WindowsCmd string
-	LinuxCmd   string
-	Config     subprocess.CommandConfig
-	TestFunc   testFunc
-}
-
-type testFunc func(s *subprocess.Subprocess) error
-
-func subprocessTest(t *testing.T, testOpts testSubprocess) {
-}
+const logTitleDiv = "========================================"
 
 func logTitle(msg string) {
-	div := "========================================"
-	divLen := len(div)
+	divLen := len(logTitleDiv)
 
 	msgLen := len(msg)
 	msgStart := (divLen - msgLen) / 2
@@ -101,7 +89,7 @@ func logTitle(msg string) {
 
 	midStr += strings.ToUpper(msg)
 
-	fmt.Println(div)
+	fmt.Println(logTitleDiv)
 	fmt.Println(midStr)
-	fmt.Println(div)
+	fmt.Println(logTitleDiv)
 }
