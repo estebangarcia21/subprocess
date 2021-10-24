@@ -1,8 +1,6 @@
 package subprocess_test
 
 import (
-	"fmt"
-	"os"
 	"runtime"
 	"strings"
 	"testing"
@@ -11,63 +9,46 @@ import (
 )
 
 func TestExec(t *testing.T) {
-	tests := map[string]*subprocess.Subprocess{
+	crossPlatformTestMatrix{
 		"windows": subprocess.New("dir"),
 		"darwin":  subprocess.New("ls", subprocess.Arg("-lh")),
 		"linux":   subprocess.New("ls", subprocess.Arg("-lh")),
-	}
-
-	goos := runtime.GOOS
-
-	for platform, sp := range tests {
-		if platform != goos {
-			continue
-		}
-
-		var opts []subprocess.Option
-		val, _ := os.LookupEnv("SHOW_TEST_SUBPROCESS_OUTPUT")
-
-		showSubprocessOutput := val == "true"
-		if !showSubprocessOutput {
-			opts = append(opts, subprocess.HideStderr)
-		}
-
-		if showSubprocessOutput {
-			logTitle("Subprocess Output Begin")
-		}
-
-		err := sp.Exec()
-
-		if showSubprocessOutput {
-			logTitle("Subprocess Output End")
-		}
-
-		if sp.ExitCode() != 0 {
-			t.Fatalf("wanted exit code 0; got %d", sp.ExitCode())
-		}
-
-		if err != nil {
+	}.Exec(func(s *subprocess.Subprocess) {
+		if err := s.Exec(); err != nil {
 			t.Fatalf("received error while executing subprocess: %v", err)
 		}
-	}
+
+		if s.ExitCode() != 0 {
+			t.Fatalf("wanted exit code 0; got %d", s.ExitCode())
+		}
+	})
 }
 
-const logTitleDiv = "========================================"
+func TestStdoutText(t *testing.T) {
+	crossPlatformTestMatrix{
+		"windows": subprocess.New("Write-Host Hello world!"),
+		"darwin":  subprocess.New("echo Hello world!", subprocess.Shell),
+		"linux":   subprocess.New("echo Hello world!", subprocess.Shell),
+	}.Exec(func(s *subprocess.Subprocess) {
+		if err := s.Exec(); err != nil {
+			t.Fatalf("received error while executing subprocess: %v", err)
+		}
 
-func logTitle(msg string) {
-	divLen := len(logTitleDiv)
+		stdout := s.StdoutText()
 
-	msgLen := len(msg)
-	msgStart := (divLen - msgLen) / 2
+		if i := strings.Index(stdout, "Hello world!"); i == -1 {
+			t.Fatal("expected to find \"Hello world!\" in the subprocess stdout")
+		}
+	})
+}
 
-	var midStr string
-	for n := 0; n < msgStart; n++ {
-		midStr += " "
+type crossPlatformTestMatrix map[string]*subprocess.Subprocess
+
+func (c crossPlatformTestMatrix) Exec(test func(*subprocess.Subprocess)) {
+	for platform, s := range c {
+		if platform == runtime.GOOS {
+			test(s)
+			break
+		}
 	}
-
-	midStr += strings.ToUpper(msg)
-
-	fmt.Println(logTitleDiv)
-	fmt.Println(midStr)
-	fmt.Println(logTitleDiv)
 }
