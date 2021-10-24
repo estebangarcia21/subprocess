@@ -10,9 +10,9 @@ import (
 
 func TestExec(t *testing.T) {
 	crossPlatformTestMatrix{
-		"windows": subprocess.New("dir"),
-		"darwin":  subprocess.New("ls", subprocess.Arg("-lh")),
-		"linux":   subprocess.New("ls", subprocess.Arg("-lh")),
+		"windows": subprocess.New("dir", subprocess.Silent),
+		"darwin":  subprocess.New("ls", subprocess.Arg("-lh"), subprocess.Silent),
+		"linux":   subprocess.New("ls", subprocess.Arg("-lh"), subprocess.Silent),
 	}.Exec(func(s *subprocess.Subprocess) {
 		if err := s.Exec(); err != nil {
 			t.Fatalf("received error while executing subprocess: %v", err)
@@ -26,9 +26,9 @@ func TestExec(t *testing.T) {
 
 func TestStdoutText(t *testing.T) {
 	crossPlatformTestMatrix{
-		"windows": subprocess.New("Write-Host Hello world!"),
-		"darwin":  subprocess.New("echo Hello world!", subprocess.Shell),
-		"linux":   subprocess.New("echo Hello world!", subprocess.Shell),
+		"windows": subprocess.New("Write-Host Hello world!", subprocess.Silent),
+		"darwin":  subprocess.New("echo Hello world!", subprocess.Shell, subprocess.Silent),
+		"linux":   subprocess.New("echo Hello world!", subprocess.Shell, subprocess.Silent),
 	}.Exec(func(s *subprocess.Subprocess) {
 		if err := s.Exec(); err != nil {
 			t.Fatalf("received error while executing subprocess: %v", err)
@@ -37,6 +37,24 @@ func TestStdoutText(t *testing.T) {
 		stdout := s.StdoutText()
 
 		if i := strings.Index(stdout, "Hello world!"); i == -1 {
+			t.Fatal("expected to find \"Hello world!\" in the subprocess stdout")
+		}
+	})
+}
+
+func TestStderrText(t *testing.T) {
+	crossPlatformTestMatrix{
+		"windows": subprocess.New("Write-Error \"Hello world!\"", subprocess.Silent),
+		"darwin":  subprocess.New(">&2 echo \"Hello world!\"", subprocess.Shell, subprocess.Silent),
+		"linux":   subprocess.New(">&2 echo \"Hello world!\"", subprocess.Shell, subprocess.Silent),
+	}.Exec(func(s *subprocess.Subprocess) {
+		if err := s.Exec(); err != nil {
+			t.Fatalf("received error while executing subprocess: %v", err)
+		}
+
+		stderr := s.StderrText()
+
+		if i := strings.Index(stderr, "Hello world!"); i == -1 {
 			t.Fatal("expected to find \"Hello world!\" in the subprocess stdout")
 		}
 	})
