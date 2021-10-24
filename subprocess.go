@@ -3,60 +3,107 @@ package subprocess
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 )
 
 // Subprocess represents a monitored process executed by the application.
 type Subprocess struct {
-	ExitCode   int
-	hideOutput bool
-	executable string
-	cmd        *exec.Cmd
-	shell      bool
-	CommandConfig
-}
+	exitCode int       // The exit code of the process.
+	stdout   []byte    // The bytes written to stdout.
+	stderr   []byte    // The bytes written to stderr.
+	cmd      string    // The name of the command to be executed.
+	process  *exec.Cmd // The underlying *exec.Cmd that represents the subprocess.
 
-// CommandConfig is the configuration of a command.
-type CommandConfig struct {
-	Args    []string // Args is the subprocess command arguments.
-	Options []Option // Options is the subprocess options.
-	Context string   // Context is where the subprocesses will be executed. By default the process will execute where the binary lies.
+	args       []string // The sanitized command arguments.
+	hideStderr bool     // Hide stderr output.
+	hideStdout bool     // Hide stdout output.
+	shell      bool     // Executes the command directly in the shell with unsanitization.
+	context    string   // Where to execute the subprocess.
 }
-
-// Args represents a list of command arguments.
-type Args []string
 
 // Option is a configuration argument for a subprocess.
 type Option func(s *Subprocess)
 
-// HideOutput hides the output of the subprocess.
-var HideOutput Option = func(s *Subprocess) {
-	s.hideOutput = true
-}
-
-// Shell determines whether the command will directly be ran in the shell
-// without paramater sanitization.
-var Shell Option = func(s *Subprocess) {
-	s.shell = true
-}
+// Subprocess options.
+var (
+	// Arg adds sanitized argument to command.
+	Arg = func(arg string) Option {
+		return func(s *Subprocess) {
+			s.args = append(s.args, arg)
+		}
+	}
+	// Context determines where the subprocess will be executed.
+	// A relative or absolute path may be provided.
+	Context = func(path string) Option {
+		return func(s *Subprocess) {
+			s.context = path
+		}
+	}
+	// Silent hides all output from the subprocess.
+	Silent Option = func(s *Subprocess) {
+		s.hideStdout = true
+		s.hideStderr = true
+	}
+	// HideStout hides the stdout output of the subprocess.
+	HideStdout Option = func(s *Subprocess) {
+		s.hideStdout = true
+	}
+	// HideStderr hides the stder output of the subprocess.
+	HideStderr Option = func(s *Subprocess) {
+		s.hideStderr = true
+	}
+	// Shell determines whether the command will directly be ran in the shell
+	// without paramater sanitization.
+	Shell Option = func(s *Subprocess) {
+		s.shell = true
+	}
+)
 
 // New creates a new Subprocess with the default exit code of 1.
-func New(cmd string, config CommandConfig) *Subprocess {
+func New(cmd string, opts ...Option) *Subprocess {
 	s := &Subprocess{
-		ExitCode:      -1,
-		executable:    cmd,
-		CommandConfig: config,
+		exitCode: -1,
+		cmd:      cmd,
 	}
-	for _, opt := range config.Options {
+	for _, opt := range opts {
 		opt(s)
 	}
 	return s
 }
 
+// ExitCode returns the exit code of the subprocess.
+// If the process was terminated by a signal or has not finished.
+func (s *Subprocess) ExitCode() int {
+	return s.exitCode
+}
+
 // IsFinished returns true if the process has finished.
 func (s *Subprocess) IsFinished() bool {
-	return s.cmd.ProcessState.Exited()
+	return s.process.ProcessState.Exited()
+}
+
+// Stderr returns the bytes that the process has sent to stderr.
+func (s *Subprocess) Stderr() []byte {
+	return s.stderr
+}
+
+// StderrText returns the bytes that the process has sent to stderr.
+// The bytes are encoded in a new string.
+func (s *Subprocess) StderrText() string {
+	return string(s.stderr)
+}
+
+// Stdout returns the bytes that the process has sent to stdout.
+func (s *Subprocess) Stdout() []byte {
+	return s.stdout
+}
+
+// StdoutText returns the bytes that the process has sent to stdout.
+// The bytes are encoded in a new string.
+func (s *Subprocess) StdoutText() string {
+	return string(s.stdout)
 }
 
 // Exec starts the subprocess.
@@ -66,42 +113,49 @@ func (s *Subprocess) Exec() error {
 		return fmt.Errorf("operating system %s not found", osName)
 	}
 
-	cmd, err := spawner.CreateCommand(s.executable, s.Args, s.shell, osName)
+	cmd, err := spawner.CreateCommand(s.cmd, s.args, s.shell, osName)
 	if err != nil {
 		return err
 	}
-
-	cmd.Stderr = os.Stdout
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
 	}
-
-	wd, wdErr := os.Getwd()
-	if wdErr == nil && s.Context != "" {
-		os.Chdir(s.Context)
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return err
 	}
 
-	_ = cmd.Start()
+	wd, err := os.Getwd()
+	chwd := err == nil && s.context != ""
 
-	if !s.hideOutput {
-		scanner := bufio.NewScanner(stdout)
-		scanner.Split(bufio.ScanRunes)
+	if chwd {
+		os.Chdir(s.context)
+	}
 
-		for scanner.Scan() {
-			m := scanner.Text()
-			fmt.Print(m)
+	cmd.Start()
+
+	readBytes(stdout, func(b []byte) {
+		s.stdout = append(s.stdout, b...)
+		if !s.hideStdout {
+			fmt.Print(string(b))
 		}
-	}
+	})
+	readBytes(stderr, func(b []byte) {
+		s.stderr = append(s.stderr, b...)
+		if !s.hideStderr {
+			fmt.Print(string(b))
+		}
+	})
 
-	_ = cmd.Wait()
+	cmd.Wait()
 
-	if wdErr == nil {
+	if chwd {
 		os.Chdir(wd)
 	}
 
-	s.ExitCode = cmd.ProcessState.ExitCode()
+	s.exitCode = cmd.ProcessState.ExitCode()
 
 	return nil
 }
@@ -113,4 +167,14 @@ func (s *Subprocess) ExecAsync() chan error {
 		ch <- s.Exec()
 	}(s)
 	return ch
+}
+
+func readBytes(closer io.ReadCloser, action func([]byte)) {
+	sc := bufio.NewScanner(closer)
+	sc.Split(bufio.ScanRunes)
+
+	for sc.Scan() {
+		b := sc.Bytes()
+		action(b)
+	}
 }

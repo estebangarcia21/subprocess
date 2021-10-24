@@ -2,24 +2,42 @@
 
 Spawn subprocesses in Go.
 
-## Example
+## Sanitized mode
 
 ```go
 package main
 
 import (
-  "fmt"
-  "github.com/estebangarcia21/subprocess"
+	"log"
+
+	"github.com/estebangarcia21/subprocess"
 )
 
 func main() {
-  s := subprocess.New("ls -lh")
+	s := subprocess.New("ls", subprocess.Arg("-lh"), subprocess.Context("/"))
 
-  err := s.Exec()
-  if err != nil {
-    fmt.Println("Error while executing subprocess ls")
-  }
+	if err := s.Exec(); err != nil {
+		log.Fatal(err)
+	}
+}
+```
 
-  fmt.Printf("Exit code: %s\n", s.ExitCode)
+## Shell mode
+
+```go
+package main
+
+import (
+	"log"
+
+	"github.com/estebangarcia21/subprocess"
+)
+
+func main() {
+	s := subprocess.New("ls -lh", subprocess.Shell)
+
+	if err := s.Exec(); err != nil {
+		log.Fatal(err)
+	}
 }
 ```

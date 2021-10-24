@@ -11,35 +11,15 @@ import (
 )
 
 func TestExec(t *testing.T) {
-	tests := map[string]struct {
-		cmd           string
-		commandConfig subprocess.CommandConfig
-	}{
-		"windows": {
-			cmd: "dir",
-			commandConfig: subprocess.CommandConfig{
-				Context: "/",
-			},
-		},
-		"darwin": {
-			cmd: "ls",
-			commandConfig: subprocess.CommandConfig{
-				Args:    []string{"-lh"},
-				Context: "/",
-			},
-		},
-		"linux": {
-			cmd: "ls",
-			commandConfig: subprocess.CommandConfig{
-				Args:    []string{"-lh"},
-				Context: "/",
-			},
-		},
+	tests := map[string]*subprocess.Subprocess{
+		"windows": subprocess.New("dir"),
+		"darwin":  subprocess.New("ls", subprocess.Arg("-lh")),
+		"linux":   subprocess.New("ls", subprocess.Arg("-lh")),
 	}
 
 	goos := runtime.GOOS
 
-	for platform, tt := range tests {
+	for platform, sp := range tests {
 		if platform != goos {
 			continue
 		}
@@ -49,10 +29,8 @@ func TestExec(t *testing.T) {
 
 		showSubprocessOutput := val == "true"
 		if !showSubprocessOutput {
-			opts = append(opts, subprocess.HideOutput)
+			opts = append(opts, subprocess.HideStderr)
 		}
-
-		sp := subprocess.New(tt.cmd, tt.commandConfig)
 
 		if showSubprocessOutput {
 			logTitle("Subprocess Output Begin")
@@ -64,8 +42,8 @@ func TestExec(t *testing.T) {
 			logTitle("Subprocess Output End")
 		}
 
-		if sp.ExitCode != 0 {
-			t.Fatalf("wanted exit code 0; got %d", sp.ExitCode)
+		if sp.ExitCode() != 0 {
+			t.Fatalf("wanted exit code 0; got %d", sp.ExitCode())
 		}
 
 		if err != nil {
