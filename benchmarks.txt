@@ -2,23 +2,20 @@ Benchmarks of subprocess_test.go compare the speed of using exec.Command vs subp
 purpose of the benchmarks is to test the speed difference of running a synchronous command with each
 method.
 
-goos: darwin
+goos: linux
 goarch: amd64
 pkg: github.com/estebangarcia21/subprocess
-cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
-BenchmarkSubprocessLs-12             594           2045982 ns/op
-BenchmarkExecCommandLs-12            574           2093104 ns/op
+BenchmarkSubprocessLs-2    	     949	   1254452 ns/op
+BenchmarkExecCommandLs-2   	     882	   1220187 ns/op
 
 goos: darwin
 goarch: amd64
 pkg: github.com/estebangarcia21/subprocess
-cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
-BenchmarkSubprocessLs-12             568           2402482 ns/op
-BenchmarkExecCommandLs-12            460           2374896 ns/op
+BenchmarkSubprocessLs-3    	     278	   4567371 ns/op
+BenchmarkExecCommandLs-3   	     276	   4400447 ns/op
 
-goos: darwin
+goos: windows
 goarch: amd64
 pkg: github.com/estebangarcia21/subprocess
-cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
-BenchmarkSubprocessLs-12             597           2127586 ns/op
-BenchmarkExecCommandLs-12            583           2083799 ns/op
+BenchmarkSubprocessLs-2    	       3	 371242667 ns/op
+BenchmarkExecCommandLs-2   	      28	  40425354 ns/op
