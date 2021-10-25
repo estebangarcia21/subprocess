@@ -34,7 +34,7 @@ var (
 
 // CreateCommand creates an exec.Cmd that is prepared with the root command.
 func (s spawner) CreateCommand(cmd string, args []string, shell bool, os string) (*exec.Cmd, error) {
-	spawnCmd, err := s.getAvaiableSpawnCommand()
+	spawnCmd, err := s.getAvailableSpawnCommand()
 	if err != nil {
 		return nil, err
 	}
@@ -47,9 +47,9 @@ func (s spawner) CreateCommand(cmd string, args []string, shell bool, os string)
 	return exec.Command(cmd, args...), nil
 }
 
-// getAvaiableSpawnCommand gets the first available spawn command. It returns
+// getAvailableSpawnCommand gets the first available spawn command. It returns
 // an error if no command is available.
-func (s spawner) getAvaiableSpawnCommand() (string, error) {
+func (s spawner) getAvailableSpawnCommand() (string, error) {
 	var cmd string
 
 	for k := range s {

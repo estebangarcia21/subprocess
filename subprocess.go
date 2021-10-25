@@ -19,7 +19,7 @@ type Subprocess struct {
 	args       []string // The sanitized command arguments.
 	hideStderr bool     // Hide stderr output.
 	hideStdout bool     // Hide stdout output.
-	shell      bool     // Executes the command directly in the shell with unsanitization.
+	shell      bool     // Executes the command directly in the shell without sanitization.
 	context    string   // Where to execute the subprocess.
 }
 
@@ -46,16 +46,16 @@ var (
 		s.hideStdout = true
 		s.hideStderr = true
 	}
-	// HideStout hides the stdout output of the subprocess.
+	// HideStdout hides the stdout output of the subprocess.
 	HideStdout Option = func(s *Subprocess) {
 		s.hideStdout = true
 	}
-	// HideStderr hides the stder output of the subprocess.
+	// HideStderr hides the stderr output of the subprocess.
 	HideStderr Option = func(s *Subprocess) {
 		s.hideStderr = true
 	}
-	// Shell determines whether the command will directly be ran in the shell
-	// without paramater sanitization.
+	// Shell determines whether the command will directly be run in the shell
+	// without parameter sanitization.
 	Shell Option = func(s *Subprocess) {
 		s.shell = true
 	}
