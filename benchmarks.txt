@@ -1,0 +1,24 @@
+Benchmarks of subprocess_test.go compare the speed of using exec.Command vs subprocess.New for ls. The
+purpose of the benchmarks is to test the speed difference of running a synchronous command with each
+method.
+
+goos: darwin
+goarch: amd64
+pkg: github.com/estebangarcia21/subprocess
+cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
+BenchmarkSubprocessLs-12             594           2045982 ns/op
+BenchmarkExecCommandLs-12            574           2093104 ns/op
+
+goos: darwin
+goarch: amd64
+pkg: github.com/estebangarcia21/subprocess
+cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
+BenchmarkSubprocessLs-12             568           2402482 ns/op
+BenchmarkExecCommandLs-12            460           2374896 ns/op
+
+goos: darwin
+goarch: amd64
+pkg: github.com/estebangarcia21/subprocess
+cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
+BenchmarkSubprocessLs-12             597           2127586 ns/op
+BenchmarkExecCommandLs-12            583           2083799 ns/op

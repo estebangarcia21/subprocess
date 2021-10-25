@@ -3,6 +3,7 @@ package subprocess_test
 import (
 	"fmt"
 	"math/rand"
+	"os/exec"
 	"runtime"
 	"strings"
 	"testing"
@@ -64,27 +65,6 @@ func TestStderrText(t *testing.T) {
 	})
 }
 
-type crossPlatformTestMatrix map[string]*subprocess.Subprocess
-
-func (c crossPlatformTestMatrix) Exec(test func(*subprocess.Subprocess)) {
-	for platform, s := range c {
-		if platform == runtime.GOOS {
-			test(s)
-			break
-		}
-	}
-}
-
-var randTokens = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-func randString(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = randTokens[rand.Intn(len(randTokens))]
-	}
-	return string(b)
-}
-
 func TestRandString(t *testing.T) {
 	strLen := 16
 
@@ -104,4 +84,39 @@ func TestRandString(t *testing.T) {
 	if len(a) != strLen && len(b) != strLen {
 		t.Fatalf("strings are not of specified length: %d; a=%d; b=%d", strLen, len(a), len(b))
 	}
+}
+
+func BenchmarkSubprocessLs(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		s := subprocess.New("ls", subprocess.HideStdout)
+		s.Exec()
+		s.Stdout()
+	}
+}
+
+func BenchmarkExecCommandLs(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		exec.Command("ls").Output()
+	}
+}
+
+type crossPlatformTestMatrix map[string]*subprocess.Subprocess
+
+func (c crossPlatformTestMatrix) Exec(test func(*subprocess.Subprocess)) {
+	for platform, s := range c {
+		if platform == runtime.GOOS {
+			test(s)
+			break
+		}
+	}
+}
+
+var randTokens = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func randString(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = randTokens[rand.Intn(len(randTokens))]
+	}
+	return string(b)
 }
