@@ -56,6 +56,9 @@ var (
 	}
 	// Shell determines whether the command will directly be run in the shell
 	// without parameter sanitization.
+	//
+	// Only applicable for darwin or linux based systems. Windows subprocesses
+	// are always executed in the Powershell from the CMD prompt.
 	Shell Option = func(s *Subprocess) {
 		s.shell = true
 	}
