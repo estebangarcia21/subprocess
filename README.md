@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	s := subprocess.New("ls", subprocess.Arg("-lh"), subprocess.Context("/"))
+	s := subprocess.New("ls", subprocess.Arg("-lh"))
 
 	if err := s.Exec(); err != nil {
 		log.Fatal(err)
