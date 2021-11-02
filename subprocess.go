@@ -164,10 +164,13 @@ func (s *Subprocess) Exec() error {
 }
 
 // ExecAsync starts the subprocess asynchronously.
+//
+// Returns a channel that closes once the result is finished
 func (s *Subprocess) ExecAsync() chan error {
 	ch := make(chan error)
 	go func(s *Subprocess) {
 		ch <- s.Exec()
+		close(ch)
 	}(s)
 	return ch
 }
