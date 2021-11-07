@@ -125,9 +125,16 @@ func (s *Subprocess) Exec() error {
 	if err != nil {
 		return err
 	}
+	if !s.hideStdout {
+		cmd.Stdout = os.Stdout
+	}
+
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		return err
+	}
+	if !s.hideStderr {
+		cmd.Stderr = os.Stderr
 	}
 
 	wd, err := os.Getwd()
@@ -141,15 +148,9 @@ func (s *Subprocess) Exec() error {
 
 	readBytes(stdout, func(b []byte) {
 		s.stdout = append(s.stdout, b...)
-		if !s.hideStdout {
-			fmt.Print(string(b))
-		}
 	})
 	readBytes(stderr, func(b []byte) {
 		s.stderr = append(s.stderr, b...)
-		if !s.hideStderr {
-			fmt.Print(string(b))
-		}
 	})
 
 	cmd.Wait()
@@ -165,7 +166,7 @@ func (s *Subprocess) Exec() error {
 
 // ExecAsync starts the subprocess asynchronously.
 //
-// Returns a channel that closes once the result is finished
+// Returns a channel that closes once the result is finished.
 func (s *Subprocess) ExecAsync() chan error {
 	ch := make(chan error)
 	go func(s *Subprocess) {
