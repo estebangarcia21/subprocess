@@ -29,6 +29,14 @@ type Option func(s *Subprocess)
 // Subprocess options.
 var (
 	// Arg adds sanitized argument to command.
+	Args = func(args ...string) Option {
+		return func(s *Subprocess) {
+			for _, arg := range args {
+				s.args = append(s.args, arg)
+			}
+		}
+	}
+	// Arg adds sanitized argument to command.
 	Arg = func(arg string) Option {
 		return func(s *Subprocess) {
 			s.args = append(s.args, arg)
