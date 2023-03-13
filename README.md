@@ -2,6 +2,10 @@
 
 Spawn subprocesses in Go.
 
+```
+go get -u "github.com/estebangarcia21/subprocess"
+```
+
 ## Sanitized mode
 
 ```go
