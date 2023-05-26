@@ -2,6 +2,7 @@ package subprocess
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -21,7 +22,12 @@ type Subprocess struct {
 	hideStdout bool     // Hide stdout output.
 	shell      bool     // Executes the command directly in the shell without sanitization.
 	context    string   // Where to execute the subprocess.
+	catchError bool     // If true, returns an error from Subprocess#Exec if the command does not exit with a 0 code.
 }
+
+var (
+	ErrUngracefulExit = errors.New("exited ungracefully with a non 0 exit code")
+)
 
 // Option is a configuration argument for a subprocess.
 type Option func(s *Subprocess)
@@ -69,6 +75,9 @@ var (
 	// are always executed in the Powershell from the CMD prompt.
 	Shell Option = func(s *Subprocess) {
 		s.shell = true
+	}
+	CatchError Option = func(s *Subprocess) {
+		s.catchError = true
 	}
 )
 
@@ -168,6 +177,9 @@ func (s *Subprocess) Exec() error {
 	}
 
 	s.exitCode = cmd.ProcessState.ExitCode()
+	if s.catchError && s.exitCode != 0 {
+		return ErrUngracefulExit
+	}
 
 	return nil
 }

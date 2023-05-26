@@ -65,6 +65,25 @@ func TestStderrText(t *testing.T) {
 	})
 }
 
+func TestStderrCatchError(t *testing.T) {
+	u := randString(16)
+	crossPlatformTestMatrix{
+		"windows": subprocess.New(fmt.Sprintf("Write-Error-- %s", u), subprocess.HideStderr, subprocess.CatchError),
+		"darwin":  subprocess.New(fmt.Sprintf(">&2 echo- %s", u), subprocess.Shell, subprocess.HideStderr, subprocess.CatchError),
+		"linux":   subprocess.New(fmt.Sprintf(">&2 echo- %s", u), subprocess.Shell, subprocess.HideStderr, subprocess.CatchError),
+	}.Exec(func(s *subprocess.Subprocess) {
+		err := s.Exec()
+		println(s.ExitCode())
+		if err == nil {
+			t.Fatal("expected an error with the subprocess.CatchError option")
+		}
+
+		if err != subprocess.ErrUngracefulExit {
+			t.Fatal("expected ErrUngracefulExit")
+		}
+	})
+}
+
 func TestRandString(t *testing.T) {
 	strLen := 16
 
