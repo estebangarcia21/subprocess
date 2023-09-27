@@ -18,6 +18,7 @@ type Subprocess struct {
 	process  *exec.Cmd // The underlying *exec.Cmd that represents the subprocess.
 
 	args       []string // The sanitized command arguments.
+	env        []string // Environment variables for the subprocess.
 	hideStderr bool     // Hide stderr output.
 	hideStdout bool     // Hide stdout output.
 	shell      bool     // Executes the command directly in the shell without sanitization.
@@ -53,6 +54,16 @@ var (
 	Context = func(path string) Option {
 		return func(s *Subprocess) {
 			s.context = path
+		}
+	}
+	EnvVars = func(envVars ...string) Option {
+		return func(s *Subprocess) {
+			s.env = append(s.env, envVars...)
+		}
+	}
+	EnvVar = func(envVar string) Option {
+		return func(s *Subprocess) {
+			s.env = append(s.env, envVar)
 		}
 	}
 	// Silent hides all output from the subprocess.
@@ -136,6 +147,10 @@ func (s *Subprocess) Exec() error {
 	cmd, err := spawner.CreateCommand(s.cmd, s.args, s.shell, osName)
 	if err != nil {
 		return err
+	}
+
+	if s.env != nil {
+		cmd.Env = append(os.Environ(), s.env...)
 	}
 
 	stdout, err := cmd.StdoutPipe()
